@@ -26,7 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ConsoleApp.Core\ConsoleApp.Core.csproj" />
     <ProjectReference Include="..\ConsoleApp.Infrastructure\ConsoleApp.Infrastructure.csproj" />
-    <ProjectReference Include="..\Libraries\Infras\ServerLogger.Infra\ServerLogger.Infra\ServerLogger.Infra.csproj" />
+    <ProjectReference Include="..\Libraries\Logs\ServerLogger.Infra\ServerLogger.Infra\ServerLogger.Infra.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.LocalDevelopment.json">

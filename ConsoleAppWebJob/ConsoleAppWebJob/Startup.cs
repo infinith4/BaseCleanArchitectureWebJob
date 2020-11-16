@@ -20,7 +20,7 @@ namespace ConsoleAppWebJob
     {
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            this.Configuration = configuration;
         }
 
         public IConfiguration Configuration { get; }
@@ -64,7 +64,7 @@ namespace ConsoleAppWebJob
             builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly()).Where(t => t.Name.EndsWith("Presenter")).SingleInstance();
 
             builder.Populate(services);
-            var container = builder.Build();
+            Autofac.IContainer container = builder.Build();
             // Create the IServiceProvider based on the container.
             return new AutofacServiceProvider(container);
         }

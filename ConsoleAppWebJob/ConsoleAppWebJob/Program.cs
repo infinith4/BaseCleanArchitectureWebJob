@@ -35,23 +35,27 @@ namespace ConsoleAppWebJob
             //TODO: https://docs.microsoft.com/ja-jp/azure/azure-monitor/app/ilogger
             //TelemetryClient _telemetryClient = new TelemetryClient();
             Console.WriteLine("Start App.");
-            var basePath = Directory.GetCurrentDirectory();
-            var environmentName = Environment.GetEnvironmentVariable(Constants.Environment.AspNetCoreEnvironment);
-            var configurationBuilder = new ConfigurationBuilder()
+            string basePath = Directory.GetCurrentDirectory();
+            string environmentName = Environment.GetEnvironmentVariable(Constants.Environment.AspNetCoreEnvironment);
+            IConfigurationBuilder configurationBuilder = new ConfigurationBuilder()
                 .SetBasePath(basePath)
                 .AddJsonFile("appsettings.json", false, true)  //optional: trueは存在していなくても構わない。
                 .AddJsonFile($"appsettings.{environmentName}.json", true, true)
                 .AddEnvironmentVariables();
 
-            var config = configurationBuilder.Build();
-            Console.WriteLine(config[Constants.Configuration.KeyName.KeyVaultName]);
-            //ConsoleAppの場合はADを使う
-            config = configurationBuilder.AddAzureKeyVault(
-                $"https://{config[Constants.Configuration.KeyName.KeyVaultName]}.vault.azure.net/",
-                config[Constants.Configuration.KeyName.AzureADApplicationId],
-                config[Constants.Configuration.KeyName.AzureADPassword]).Build();
+            IConfigurationRoot config = configurationBuilder.Build();
+            string keyVaultName = config[Constants.Configuration.KeyName.KeyVaultName];
+            Console.WriteLine($"KeyVaultName: {keyVaultName}");
+            if (!string.IsNullOrEmpty(config[Constants.Configuration.KeyName.KeyVaultName]))
+            {
+                //ConsoleAppの場合はADを使う
+                config = configurationBuilder.AddAzureKeyVault(
+                    $"https://{config[Constants.Configuration.KeyName.KeyVaultName]}.vault.azure.net/",
+                    config[Constants.Configuration.KeyName.AzureADApplicationId],
+                    config[Constants.Configuration.KeyName.AzureADPassword]).Build();
+            }
 
-            var instrumentationKey = config["ApplicationInsights:InstrumentationKey"];
+            string instrumentationKey = config["ApplicationInsights:InstrumentationKey"];
 
             IServiceCollection services = new ServiceCollection();
 
@@ -60,10 +64,10 @@ namespace ConsoleAppWebJob
                 conf.TelemetryChannel = channel;
             });
 
-            var telemetryClient = GetApplicationInsightsTelemetryClient(instrumentationKey);
+            TelemetryClient telemetryClient = GetApplicationInsightsTelemetryClient(instrumentationKey);
 
             var factory = new LoggerFactory();
-            var logger = factory.CreateLogger("ConsoleAppWebJob");
+            ILogger logger = factory.CreateLogger("ConsoleAppWebJob");
 
             services.AddSingleton<IExecuteConsoleWriteService, ExecuteConsoleWriteService>()
                 .AddSingleton<IConfiguration>(config)
@@ -80,9 +84,9 @@ namespace ConsoleAppWebJob
 #endif
             });
 
-            var keyVaultSqlDatabaseUserId = config[Constants.Configuration.KeyVault.Secret.SqlDatabaseUserId];
-            var keyVaultSqlDatabasePassword = config[Constants.Configuration.KeyVault.Secret.SqlDatabasePassword];
-            var connectionString = StartupConfig.ConnectionString.GetApplicationDbContextConnectionString(
+            string keyVaultSqlDatabaseUserId = config[Constants.Configuration.KeyVault.Secret.SqlDatabaseUserId];
+            string keyVaultSqlDatabasePassword = config[Constants.Configuration.KeyVault.Secret.SqlDatabasePassword];
+            string connectionString = StartupConfig.ConnectionString.GetApplicationDbContextConnectionString(
                 keyVaultSqlDatabaseUserId, keyVaultSqlDatabasePassword, config.GetConnectionString(Constants.ConnectionString.Db.ApplicationDbContextName)
                 );
 
@@ -96,7 +100,7 @@ namespace ConsoleAppWebJob
                     )
             );
 
-            var serviceProvider = BuildDependencyInjectionProvider(config, services);
+            IServiceProvider serviceProvider = BuildDependencyInjectionProvider(config, services);
             //serviceProvider.GetService<ILogger>().LogInformation("aaaa");
 
             //configure console logging
@@ -136,15 +140,15 @@ namespace ConsoleAppWebJob
             containerBuilder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly()).Where(t => t.Name.EndsWith("Presenter")).SingleInstance();
 
             containerBuilder.Populate(services);
-            var container = containerBuilder.Build();
+            Autofac.IContainer container = containerBuilder.Build();
             // Create the IServiceProvider based on the container.
             return new AutofacServiceProvider(container);
         }
 
         private static async Task ExecuteServiceAsync(IServiceProvider serviceProvider)
         {
-            var ExecuteConsoleWriteService = serviceProvider.GetService<IExecuteConsoleWriteService>();
-            await ExecuteConsoleWriteService.ExecuteConsoleWriteLine();
+            IExecuteConsoleWriteService executeConsoleWriteService = serviceProvider.GetService<IExecuteConsoleWriteService>();
+            await executeConsoleWriteService.ExecuteConsoleWriteLine();
         }
     }
 }
