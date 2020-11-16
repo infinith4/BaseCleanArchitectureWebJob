@@ -7,13 +7,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleAppWebJob", "Console
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{EE874735-F795-45EF-99C8-CD299C349A5D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp.Infrastructure", "ConsoleApp.Infrastructure\ConsoleApp.Infrastructure.csproj", "{C3FBAA8B-0E31-4FAC-B9AF-309E23A5D486}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.Api.Infrastructure", "Web.Api.Infrastructure\Web.Api.Infrastructure.csproj", "{C3FBAA8B-0E31-4FAC-B9AF-309E23A5D486}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp.Core", "ConsoleApp.Core\ConsoleApp.Core.csproj", "{68170B85-1CB3-4B97-B9E4-6343A89BADCB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.Api.Core", "Web.Api.Core\Web.Api.Core.csproj", "{68170B85-1CB3-4B97-B9E4-6343A89BADCB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libraries", "Libraries", "{D79557CF-0498-45CB-BD49-C57537EB6C13}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp.Infrastructure.Tests", "ConsoleApp.Infrastructure.Tests\ConsoleApp.Infrastructure.Tests.csproj", "{6678D157-6F44-4026-9369-898D95E0365B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.Api.Infrastructure.Tests", "Web.Api.Infrastructure.Tests\Web.Api.Infrastructure.Tests.csproj", "{6678D157-6F44-4026-9369-898D95E0365B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Logs", "Logs", "{1796EF40-49A8-424E-B637-BF288ED18F1A}"
 EndProject

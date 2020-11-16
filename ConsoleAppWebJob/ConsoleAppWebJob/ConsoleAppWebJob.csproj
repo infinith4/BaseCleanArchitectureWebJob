@@ -24,8 +24,8 @@
     <PackageReference Include="StructureMap.Microsoft.DependencyInjection" Version="2.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ConsoleApp.Core\ConsoleApp.Core.csproj" />
-    <ProjectReference Include="..\ConsoleApp.Infrastructure\ConsoleApp.Infrastructure.csproj" />
+    <ProjectReference Include="..\Web.Api.Core\Web.Api.Core.csproj" />
+    <ProjectReference Include="..\Web.Api.Infrastructure\Web.Api.Infrastructure.csproj" />
     <ProjectReference Include="..\Libraries\Logs\ServerLogger.Infra\ServerLogger.Infra\ServerLogger.Infra.csproj" />
   </ItemGroup>
   <ItemGroup>

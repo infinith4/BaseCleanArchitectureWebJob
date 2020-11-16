@@ -1,4 +1,4 @@
-﻿using ConsoleApp.Core.Interfaces.Gateways.Repositories.Logs;
+﻿using Web.Api.Core.Interfaces.Gateways.Repositories.Logs;
 using Microsoft.ApplicationInsights;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;

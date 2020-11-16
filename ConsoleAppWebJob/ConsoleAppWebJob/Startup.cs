@@ -7,10 +7,10 @@ using Autofac.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ConsoleApp.Core;
-using ConsoleApp.Infrastructure;
-using ConsoleApp.Infrastructure.Data.Entities;
-using ConsoleApp.Infrastructure.Data.EntityFramework;
+using Web.Api.Core;
+using Web.Api.Infrastructure;
+using Web.Api.Infrastructure.Data.Entities;
+using Web.Api.Infrastructure.Data.EntityFramework;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
 
@@ -44,7 +44,7 @@ namespace ConsoleAppWebJob
         //        options =>
         //        options.UseSqlServer(
         //            connectionString,
-        //            b => b.MigrationsAssembly("ConsoleApp.Infrastructure")
+        //            b => b.MigrationsAssembly("Web.Api.Infrastructure")
         //            )
         //    );
 

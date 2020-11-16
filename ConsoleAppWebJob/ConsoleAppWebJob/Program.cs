@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 using Autofac;
 using Autofac.Configuration;
 using Autofac.Extensions.DependencyInjection;
-using ConsoleApp.Core;
-using ConsoleApp.Core.Dto.UseCaseRequests;
-using ConsoleApp.Core.Interfaces.UseCases;
-using ConsoleApp.Infrastructure;
-using ConsoleApp.Infrastructure.Data.EntityFramework;
+using Web.Api.Core;
+using Web.Api.Core.Dto.UseCaseRequests;
+using Web.Api.Core.Interfaces.UseCases;
+using Web.Api.Infrastructure;
+using Web.Api.Infrastructure.Data.EntityFramework;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,7 +46,7 @@ namespace ConsoleAppWebJob
             IConfigurationRoot config = configurationBuilder.Build();
             string keyVaultName = config[Constants.Configuration.KeyName.KeyVaultName];
             Console.WriteLine($"KeyVaultName: {keyVaultName}");
-            if (!string.IsNullOrEmpty(config[Constants.Configuration.KeyName.KeyVaultName]))
+            if (!string.IsNullOrEmpty(keyVaultName))
             {
                 //ConsoleAppの場合はADを使う
                 config = configurationBuilder.AddAzureKeyVault(
@@ -96,7 +96,7 @@ namespace ConsoleAppWebJob
                 options =>
                 options.UseSqlServer(
                     connectionString,
-                    b => b.MigrationsAssembly("ConsoleApp.Infrastructure")
+                    b => b.MigrationsAssembly("Web.Api.Infrastructure")
                     )
             );
 
