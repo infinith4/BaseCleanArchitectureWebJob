@@ -1,9 +1,9 @@
 ---
-name: Test issue
+name: Release issue
 about: Describe this issue template's purpose here.
-title: "[Test]"
-labels: test
-assignees: tys-hiroshi
+title: "[Release]\U0001F389"
+labels: release
+assignees: toyoko-sys-tashiro
 
 ---
 
