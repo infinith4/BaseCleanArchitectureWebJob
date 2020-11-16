@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "ConsoleAppCleanArchitecture": {
+    "ConsoleAppWebJob": {
       "commandName": "Project",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "LocalDevelopment"
