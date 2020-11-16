@@ -125,6 +125,10 @@ namespace ConsoleAppWebJob
             #endregion
 
             await host.RunAsync();
+
+            //ExecuteServiceAsync(serviceProvider).GetAwaiter().GetResult();
+
+            //Console.WriteLine("End App.");
         }
 
         // NOTE: MicroBatchFramework(.NET Generic Host)でDIコンテナを差し替える(例としてUnity)
@@ -146,5 +150,11 @@ namespace ConsoleAppWebJob
                 return new AutofacServiceProvider(container);
             }
         }
+
+        //private static async Task ExecuteServiceAsync(IServiceProvider serviceProvider)
+        //{
+        //    var ExecuteConsoleWriteService = serviceProvider.GetService<IExecuteConsoleWriteService>();
+        //    await ExecuteConsoleWriteService.ExecuteConsoleWriteLine();
+        //}
     }
 }
