@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Threading.Tasks;
 using ConsoleApp.Core.Dto;
@@ -25,9 +25,9 @@ namespace ConsoleApp.Core.UseCases
             IServerLoggerRepository serverLoggerRepository,
             IMstAppSettingRepository mstAppSettingRepository)
         {
-            _configuration = configuration;
-            _serverLoggerRepository = serverLoggerRepository;
-            _mstAppSettingRepository = mstAppSettingRepository;
+            this._configuration = configuration;
+            this._serverLoggerRepository = serverLoggerRepository;
+            this._mstAppSettingRepository = mstAppSettingRepository;
         }
 
         public async Task<bool> Handle(ExecuteConsoleWriteRequest executeConsoleWriteRequest, IOutputPort<ExecuteConsoleWriteResponse> outputPort)
@@ -37,9 +37,9 @@ namespace ConsoleApp.Core.UseCases
             {
                 Console.WriteLine("exeute");
 
-                await _serverLoggerRepository.Info($"Execute ExecuteConsoleWrite.Developmentaaaasdfasfddfas", currentType);
-                await _serverLoggerRepository.Warning($"Execute ExecuteConsoleWrite.Development WARNING", currentType);
-                await _serverLoggerRepository.Error($"Execute ExecuteConsoleWrite.Developmentaaaaasfdasdfasdfa", null, currentType);
+                await this._serverLoggerRepository.Info($"Execute ExecuteConsoleWrite.Developmentaaaasdfasfddfas", currentType);
+                await this._serverLoggerRepository.Warning($"Execute ExecuteConsoleWrite.Development WARNING", currentType);
+                await this._serverLoggerRepository.Error($"Execute ExecuteConsoleWrite.Developmentaaaaasfdasdfasdfa", null, currentType);
 
                 //apiKeyの取得
                 //var responseGetAppSettingList = _mstAppSettingRepository.GetAppSettingList();
@@ -54,7 +54,7 @@ namespace ConsoleApp.Core.UseCases
             }
             catch (Exception ex)
             {
-                await _serverLoggerRepository.Error($"{Properties.ErrorResources.ErrorOccuredException}", ex, currentType);
+                await this._serverLoggerRepository.Error($"{Properties.ErrorResources.ErrorOccuredException}", ex, currentType);
                 outputPort.Handle(new ExecuteConsoleWriteResponse(new[] { new Error("", "") }));
                 return false;
             }
