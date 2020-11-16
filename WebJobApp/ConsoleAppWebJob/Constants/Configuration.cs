@@ -22,6 +22,7 @@ namespace ConsoleAppWebJob.Constants
             internal const string AzureADPassword = "AzureADPassword";
             public class ApplicationInsights
             {
+                public const string ApplicationInsightsStr = "ApplicationInsights";
                 public const string InstrumentationKey = "InstrumentationKey";
             }
         }

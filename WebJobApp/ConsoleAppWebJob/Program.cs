@@ -6,149 +6,145 @@ using Autofac;
 using Autofac.Configuration;
 using Autofac.Extensions.DependencyInjection;
 using Web.Api.Core;
-using Web.Api.Core.Dto.UseCaseRequests;
-using Web.Api.Core.Interfaces.UseCases;
 using Web.Api.Infrastructure;
 using Web.Api.Infrastructure.Data.EntityFramework;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using ConsoleAppWebJob.Interfaces;
-using ConsoleAppWebJob.Service;
 using StructureMap;
-using Microsoft.Extensions.Configuration.AzureKeyVault;
-using Microsoft.ApplicationInsights;
 using Microsoft.Extensions.Logging.ApplicationInsights;
-using Microsoft.ApplicationInsights.Extensibility;
-using System.Threading;
 
 namespace ConsoleAppWebJob
 {
     internal class Program
     {
-        private static void Main(string[] args)
+        private static IConfiguration _configuration { get; set; }
+
+        private static async Task Main(string[] args)
         {
-            var channel = new Microsoft.ApplicationInsights.Channel.InMemoryChannel();
 
-            //https://docs.microsoft.com/ja-jp/azure/azure-monitor/app/asp-net-core
-            //TODO: https://docs.microsoft.com/ja-jp/azure/azure-monitor/app/ilogger
-            //TelemetryClient _telemetryClient = new TelemetryClient();
-            Console.WriteLine("Start App.");
-            string basePath = Directory.GetCurrentDirectory();
             string environmentName = Environment.GetEnvironmentVariable(Constants.Environment.AspNetCoreEnvironment);
-            IConfigurationBuilder configurationBuilder = new ConfigurationBuilder()
-                .SetBasePath(basePath)
-                .AddJsonFile("appsettings.json", false, true)  //optional: trueは存在していなくても構わない。
-                .AddJsonFile($"appsettings.{environmentName}.json", true, true)
-                .AddEnvironmentVariables();
+            Console.WriteLine($"environmentName: {environmentName}");
+            #region 
+            IHost host = new HostBuilder()
+                .ConfigureAppConfiguration((context, config) =>
+                {
+                    string basePath = Directory.GetCurrentDirectory();
+                    config.SetBasePath(basePath);
+                    config.AddJsonFile($"appsettings.json", false, true);
+                    config.AddJsonFile($"appsettings.{environmentName}.json", true, true);
+                    config.AddEnvironmentVariables();
 
-            IConfigurationRoot config = configurationBuilder.Build();
-            string keyVaultName = config[Constants.Configuration.KeyName.KeyVaultName];
-            Console.WriteLine($"KeyVaultName: {keyVaultName}");
-            if (!string.IsNullOrEmpty(keyVaultName))
+                    /*
+                     * この後 AddAzureKeyVault() を呼ぶ際に指定するパラメータでconfiguration情報が必要なので、
+                     * 一旦ConfigurationBuilderをbuildしておく。
+                     */
+                    IConfigurationRoot builtConfig = config.Build();
+                    string keyVaultName = builtConfig[Constants.Configuration.KeyName.KeyVaultName];
+                    if (string.IsNullOrEmpty(keyVaultName))
+                    {
+                        _configuration = builtConfig;
+                    }
+                    else
+                    {
+                        string keyVaultUrl = $"https://{keyVaultName}.vault.azure.net/";
+                        if (context.HostingEnvironment.IsDevelopment() ||
+                        context.HostingEnvironment.EnvironmentName == Constants.Environment.Name.Development)
+                        {
+                            //直前に一旦buildしているので、AddAzureKeyVault() した結果は、これ以降の context.Configuration
+                            //には反映されない。
+                            //なので、AddAzureKeyVault() した結果を再度buildして、内部で保持して使用する。
+                            _configuration = config.AddAzureKeyVault(
+                                keyVaultUrl,
+                                builtConfig[Constants.Configuration.KeyName.AzureADApplicationId],
+                                builtConfig[Constants.Configuration.KeyName.AzureADPassword]
+                                )
+                                .Build();
+                        }
+                        else
+                        {
+                            _configuration = config.AddAzureKeyVault(keyVaultUrl).Build();
+                        }
+                    }
+                })
+                .ConfigureServices((context, services) =>
+                {
+                    services.AddDbContext<ApplicationDbContext>(options =>
+                    {
+                        string connectionString = StartupConfig.ConnectionString.GetApplicationDbContextConnectionString(
+                            _configuration[Constants.Configuration.KeyVault.Secret.SqlDatabaseUserId],
+                            _configuration[Constants.Configuration.KeyVault.Secret.SqlDatabasePassword],
+                            _configuration.GetConnectionString(Constants.ConnectionString.Db.ApplicationDbContextName)
+                            );
+                        options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
+                        {
+                            sqlOptions.MigrationsAssembly("Web.Api.Infrastructure");
+                            sqlOptions.EnableRetryOnFailure(
+                                maxRetryCount: 5,
+                                maxRetryDelay: TimeSpan.FromSeconds(30),
+                                errorNumbersToAdd: null
+                                );
+                        });
+                    });
+                })
+                .UseServiceProviderFactory<ContainerBuilder>(new AutofacContainerFactory())
+                .ConfigureContainer<ContainerBuilder>((context, containerBuilder) =>
+                {
+                    // Now register our services with Autofac container.
+                    containerBuilder.RegisterModule(new ConfigurationModule(_configuration));
+                    containerBuilder.RegisterModule(new CoreModule());  //NOTE: UseCaseの追加が必要
+                    containerBuilder.RegisterModule(new InfrastructureModule());  //NOTE: Repositoryの追加が必要
+                    containerBuilder.RegisterModule(new ServerLogger.Infra.InfrastructureModule());  //NOTE: Repositoryの追加が必要
+
+                    // Presenters
+                    containerBuilder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly()).Where(t => t.Name.EndsWith("Presenter")).SingleInstance();
+
+                })
+                .ConfigureWebJobs(b =>
+                {
+                    b.AddAzureStorageCoreServices();
+                    b.AddAzureStorage(a => {
+                        a.BatchSize = 1;
+                        a.NewBatchThreshold = 0;
+                        a.MaxDequeueCount = 1;
+                        a.MaxPollingInterval = TimeSpan.FromSeconds(15);
+                    });
+                })
+                .ConfigureLogging((context, b) =>
+                {
+                    b.AddConfiguration(_configuration.GetSection("Logging"));
+                    b.AddFilter<ApplicationInsightsLoggerProvider>("ConsoleAppWebJob", LogLevel.Trace);
+                    string instrumentationKey = _configuration[$"{Constants.Configuration.KeyName.ApplicationInsights.ApplicationInsightsStr}:{Constants.Configuration.KeyName.ApplicationInsights.InstrumentationKey}"];
+                    b.AddApplicationInsights(instrumentationKey);
+                    //b.AddApplicationInsights(o => o.InstrumentationKey = instrumentationKey);
+                    b.AddConsole();
+                })
+                .Build();
+            #endregion
+
+            await host.RunAsync();
+        }
+
+        // NOTE: MicroBatchFramework(.NET Generic Host)でDIコンテナを差し替える(例としてUnity)
+        // https://qiita.com/kwhrkzk/items/810d58f8f0cf1c75af52
+        private class AutofacContainerFactory : IServiceProviderFactory<ContainerBuilder>
+        {
+            private IServiceCollection Services { get; set; }
+
+            public ContainerBuilder CreateBuilder(IServiceCollection services)
             {
-                //ConsoleAppの場合はADを使う
-                config = configurationBuilder.AddAzureKeyVault(
-                    $"https://{config[Constants.Configuration.KeyName.KeyVaultName]}.vault.azure.net/",
-                    config[Constants.Configuration.KeyName.AzureADApplicationId],
-                    config[Constants.Configuration.KeyName.AzureADPassword]).Build();
+                this.Services = services;
+                return new ContainerBuilder();
             }
 
-            string instrumentationKey = config["ApplicationInsights:InstrumentationKey"];
-
-            IServiceCollection services = new ServiceCollection();
-
-            services.Configure<TelemetryConfiguration>(conf =>
+            public IServiceProvider CreateServiceProvider(ContainerBuilder containerBuilder)
             {
-                conf.TelemetryChannel = channel;
-            });
-
-            TelemetryClient telemetryClient = GetApplicationInsightsTelemetryClient(instrumentationKey);
-
-            var factory = new LoggerFactory();
-            ILogger logger = factory.CreateLogger("ConsoleAppWebJob");
-
-            services.AddSingleton<IExecuteConsoleWriteService, ExecuteConsoleWriteService>()
-                .AddSingleton<IConfiguration>(config)
-                .AddSingleton(logger)
-                .AddSingleton(telemetryClient); // Flushしなくても出るので、telemetry clientを渡す必要はなし
-
-            services.AddLogging(builder =>
-            {
-                builder.AddConfiguration(config.GetSection("Logging"));
-                builder.AddFilter<ApplicationInsightsLoggerProvider>("ConsoleAppWebJob", LogLevel.Trace);
-#if false // ILoggerBuilder経由でconsoleの設定をしても反映されない(consoleやapplication insightsに出ない)ので、下の方でLoggerFactory経由で設定している
-                builder.AddApplicationInsights(instrumentationKey);
-                builder.AddConsole();
-#endif
-            });
-
-            string keyVaultSqlDatabaseUserId = config[Constants.Configuration.KeyVault.Secret.SqlDatabaseUserId];
-            string keyVaultSqlDatabasePassword = config[Constants.Configuration.KeyVault.Secret.SqlDatabasePassword];
-            string connectionString = StartupConfig.ConnectionString.GetApplicationDbContextConnectionString(
-                keyVaultSqlDatabaseUserId, keyVaultSqlDatabasePassword, config.GetConnectionString(Constants.ConnectionString.Db.ApplicationDbContextName)
-                );
-
-            //NOTE: BuildDependencyInjectionProvider Methodを呼ぶ前に書かないといけない
-            services.AddDbContext<ApplicationDbContext>
-                (
-                options =>
-                options.UseSqlServer(
-                    connectionString,
-                    b => b.MigrationsAssembly("Web.Api.Infrastructure")
-                    )
-            );
-
-            IServiceProvider serviceProvider = BuildDependencyInjectionProvider(config, services);
-            //serviceProvider.GetService<ILogger>().LogInformation("aaaa");
-
-            //configure console logging
-            factory.AddApplicationInsights(serviceProvider, LogLevel.Trace);
-            factory.AddConsole();
-
-            //////do the hard work here
-            ////var ExecuteConsoleWriteService = serviceProvider.GetService<IBarService>();
-            ExecuteServiceAsync(serviceProvider).GetAwaiter().GetResult();
-
-            Console.WriteLine("End App.");
-        }
-
-        private static TelemetryClient GetApplicationInsightsTelemetryClient(string instrumentationKey)
-        {
-            return new TelemetryClient()
-            {
-                InstrumentationKey = instrumentationKey
-            };
-        }
-
-        private static IServiceProvider BuildDependencyInjectionProvider(IConfigurationRoot config, IServiceCollection services)
-        {
-            //services.AddSingleton(c => GetApplicationInsightsTelemetryClient(config[Constants.ConfigurationKey.AppSettings.ApplicationInsights.InstrumentationKey]));
-            var module = new ConfigurationModule(config);
-
-            // Now register our services with Autofac container.
-            var containerBuilder = new ContainerBuilder();
-            containerBuilder.RegisterModule(module);
-            containerBuilder.RegisterModule(new CoreModule());  //NOTE: UseCaseの追加が必要
-            containerBuilder.RegisterModule(new InfrastructureModule());  //NOTE: Repositoryの追加が必要
-            containerBuilder.RegisterModule(new ServerLogger.Infra.InfrastructureModule());  //NOTE: Repositoryの追加が必要
-
-            // Presenters
-            //builder.RegisterType<RegisterUserPresenter>().SingleInstance();
-            //builder.RegisterType<OrderPresenter>().SingleInstance();
-            containerBuilder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly()).Where(t => t.Name.EndsWith("Presenter")).SingleInstance();
-
-            containerBuilder.Populate(services);
-            Autofac.IContainer container = containerBuilder.Build();
-            // Create the IServiceProvider based on the container.
-            return new AutofacServiceProvider(container);
-        }
-
-        private static async Task ExecuteServiceAsync(IServiceProvider serviceProvider)
-        {
-            IExecuteConsoleWriteService executeConsoleWriteService = serviceProvider.GetService<IExecuteConsoleWriteService>();
-            await executeConsoleWriteService.ExecuteConsoleWriteLine();
+                containerBuilder.Populate(this.Services);
+                Autofac.IContainer container = containerBuilder.Build();
+                return new AutofacServiceProvider(container);
+            }
         }
     }
 }
