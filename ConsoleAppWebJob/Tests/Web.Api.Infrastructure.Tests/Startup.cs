@@ -19,15 +19,15 @@ namespace Web.Api.Infrastructure.Tests
     {
         public static IConfigurationRoot Configuration()
         {
-        	var environmentName = "Staging";  //Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-            var basePath = Directory.GetCurrentDirectory();
-            var configurationBuilder = new ConfigurationBuilder()
+            string environmentName = "Staging";  //Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            string basePath = Directory.GetCurrentDirectory();
+            IConfigurationBuilder configurationBuilder = new ConfigurationBuilder()
                 .SetBasePath(basePath)
                 .AddJsonFile("appsettings.json")
                 .AddJsonFile($"appsettings.{environmentName}.json")
                 .AddEnvironmentVariables();
 
-            var config = configurationBuilder.Build();
+            IConfigurationRoot config = configurationBuilder.Build();
 
             return config;
         }
