@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Web.Api\Web.Api.csproj" />
+    <ProjectReference Include="..\..\ConsoleAppWebJob\ConsoleAppWebJob.csproj" />
   </ItemGroup>
 
 </Project>
