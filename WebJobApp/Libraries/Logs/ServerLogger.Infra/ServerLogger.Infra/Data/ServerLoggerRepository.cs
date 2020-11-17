@@ -1,4 +1,4 @@
-﻿using Web.Api.Core.Interfaces.Gateways.Repositories.Logs;
+using Web.Api.Core.Interfaces.Gateways.Repositories.Logs;
 using Microsoft.ApplicationInsights;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -19,30 +19,30 @@ namespace ServerLogger.Infra.Data
             TelemetryClient telemetryClient
             )
         {
-            _logger = logger;
-            _telemetryClient = telemetryClient;
+            this._logger = logger;
+            this._telemetryClient = telemetryClient;
         }
 
         public Task Info(string message, Type type = null)
         {
-            _logger.LogInformation($"Info Message: {message}; Type: {type}");
-            _telemetryClient?.Flush();
+            this._logger.LogInformation($"Info Message: {message}; Type: {type}");
+            this._telemetryClient?.Flush();
 
             return Task.FromResult(0);
         }
 
         public Task Warning(string message, Type type = null)
         {
-            _logger.LogWarning($"Warning Message: {message}; Type: {type}");
-            _telemetryClient?.Flush();
+            this._logger.LogWarning($"Warning Message: {message}; Type: {type}");
+            this._telemetryClient?.Flush();
 
             return Task.FromResult(0);
         }
 
         public Task Error(string message, Exception exception = null, Type type = null)
         {
-            _logger.LogError(exception, $"Error Message: {message}; Type: {type}");
-            _telemetryClient?.Flush();
+            this._logger.LogError(exception, $"Error Message: {message}; Type: {type}");
+            this._telemetryClient?.Flush();
 
             return Task.FromResult(0);
         }
